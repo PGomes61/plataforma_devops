@@ -1,0 +1,61 @@
+services:
+  # 1. Banco de Dados Central
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: db-academico
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      # O Postgres exige um banco padrão para iniciar, chamaremos de default_db
+      POSTGRES_DB: default_db 
+    ports:
+      - "5432:5432"
+    volumes:
+      # Mapeia o seu script para a pasta nativa de inicialização do Postgres
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - rede-microsservicos
+
+  # 2. Microsserviço de Autenticação
+  auth-service:
+    build:
+      context: ../services/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8080" # Porta 8081 na sua máquina
+    depends_on:
+      - postgres-db
+    networks:
+      - rede-microsservicos
+
+  # 3. Microsserviço Acadêmico
+  academic-service:
+    build:
+      context: ../services/academic-service
+      dockerfile: Dockerfile
+    container_name: academic-service
+    ports:
+      - "8082:8080" # Porta 8082 na sua máquina
+    depends_on:
+      - postgres-db
+    networks:
+      - rede-microsservicos
+
+  # 4. Microsserviço de Atividades
+  assignment-service:
+    build:
+      context: ../services/assignment-service
+      dockerfile: Dockerfile
+    container_name: assignment-service
+    ports:
+      - "8083:8080" # Porta 8083 na sua máquina
+    depends_on:
+      - postgres-db
+    networks:
+      - rede-microsservicos
+
+# Definição de rede interna do tipo bridge
+networks:
+  rede-microsservicos:
+    driver: bridge
