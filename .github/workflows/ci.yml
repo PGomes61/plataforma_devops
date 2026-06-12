@@ -28,17 +28,17 @@ jobs:
       # 4. Compila o Auth Service
       - name: Build do Auth Service
         run: |
-          cd auth-service
+          cd services/auth-service
           mvn clean compile
 
       # 5. Compila o Academic Service
       - name: Build do Academic Service
         run: |
-          cd academic-service
+          cd services/academic-service
           mvn clean compile
 
       # 6. Compila o Assignment Service
       - name: Build do Assignment Service
         run: |
-          cd assignment-service
+          cd services/assignment-service
           mvn clean compile
