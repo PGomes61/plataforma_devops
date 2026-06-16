@@ -40,6 +40,7 @@ services:
       - "8081:8080"
     environment:
       DB_HOST: postgres-auth
+      SERVER_PORT: 8080 # <-- Adicionado
     depends_on:
       - postgres-auth
     networks:
@@ -55,6 +56,7 @@ services:
       - "8082:8080"
     environment:
       DB_HOST: postgres-academic
+      SERVER_PORT: 8080 # <-- Adicionado
     depends_on:
       - postgres-academic
     networks:
@@ -70,8 +72,8 @@ services:
       - "8083:8080"
     environment:
       DB_HOST: postgres-assignment
-      # Variável que você usará no código para apontar para o academic-service
       ACADEMIC_SERVICE_URL: http://academic-service:8080
+      SERVER_PORT: 8080 # <-- Adicionado
     depends_on:
       - postgres-assignment
       - academic-service
