@@ -14,11 +14,14 @@ public class Atividade {
     @Column(nullable = false)
     private String titulo;
 
-    @Column(columnDefinition = "TEXT") // TEXT é melhor para descrições longas
+    @Column(columnDefinition = "TEXT")
     private String descricao;
 
     @Column(nullable = false)
-    private LocalDate prazo; // Formato esperado no JSON: "YYYY-MM-DD"
+    private LocalDate prazo;
+
+    @Column(nullable = false)
+    private Long disciplinaId;
 
     // Getters e Setters
     public Long getId() {
@@ -51,5 +54,13 @@ public class Atividade {
 
     public void setPrazo(LocalDate prazo) {
         this.prazo = prazo;
+    }
+
+    public Long getDisciplinaId() {
+        return disciplinaId;
+    }
+
+    public void setDisciplinaId(Long disciplinaId) {
+        this.disciplinaId = disciplinaId;
     }
 }
