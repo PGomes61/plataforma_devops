@@ -1,18 +1,32 @@
 services:
-  # 1. Banco de Dados Central
-  postgres-db:
+  # 1. Bancos de Dados Isolados
+  postgres-auth:
     image: postgres:15-alpine
-    container_name: db-academico
+    container_name: postgres-auth
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
-      # O Postgres exige um banco padrão para iniciar, chamaremos de default_db
-      POSTGRES_DB: default_db
-    ports:
-      - "5432:5432"
-    volumes:
-      # Mapeia o seu script para a pasta nativa de inicialização do Postgres
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      POSTGRES_DB: db_auth
+    networks:
+      - rede-microsservicos
+
+  postgres-academic:
+    image: postgres:15-alpine
+    container_name: postgres-academic
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: db_academic
+    networks:
+      - rede-microsservicos
+
+  postgres-assignment:
+    image: postgres:15-alpine
+    container_name: postgres-assignment
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: db_assignment
     networks:
       - rede-microsservicos
 
@@ -23,9 +37,11 @@ services:
       dockerfile: Dockerfile
     container_name: auth-service
     ports:
-      - "8081:8080" # Porta 8081 na sua máquina
+      - "8081:8080"
+    environment:
+      DB_HOST: postgres-auth
     depends_on:
-      - postgres-db
+      - postgres-auth
     networks:
       - rede-microsservicos
 
@@ -36,9 +52,11 @@ services:
       dockerfile: Dockerfile
     container_name: academic-service
     ports:
-      - "8082:8080" # Porta 8082 na sua máquina
+      - "8082:8080"
+    environment:
+      DB_HOST: postgres-academic
     depends_on:
-      - postgres-db
+      - postgres-academic
     networks:
       - rede-microsservicos
 
@@ -49,13 +67,17 @@ services:
       dockerfile: Dockerfile
     container_name: assignment-service
     ports:
-      - "8083:8080" # Porta 8083 na sua máquina
+      - "8083:8080"
+    environment:
+      DB_HOST: postgres-assignment
+      # Variável que você usará no código para apontar para o academic-service
+      ACADEMIC_SERVICE_URL: http://academic-service:8080
     depends_on:
-      - postgres-db
+      - postgres-assignment
+      - academic-service
     networks:
       - rede-microsservicos
 
-# Definição de rede interna do tipo bridge
 networks:
   rede-microsservicos:
     driver: bridge
