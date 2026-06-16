@@ -16,6 +16,9 @@ public class Disciplina {
     @Column(nullable = false, unique = true)
     private String codigo; // Ex.: "ENG-SOFt", "CALC-II", etc.
 
+    @Column(nullable = false)
+    private Integer cargaHoraria;
+
     public Long getId() {
         return id;
     }
@@ -38,5 +41,13 @@ public class Disciplina {
 
     public void setCodigo(String codigo) {
         this.codigo = codigo;
+    }
+
+    public Integer getCargaHoraria() {
+        return cargaHoraria;
+    }
+
+    public void setCargaHoraria(Integer cargaHoraria) {
+        this.cargaHoraria = cargaHoraria;
     }
 }

@@ -1,7 +1,7 @@
 package com.example.assignment_service.domain;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "tb_atividades")
@@ -14,16 +14,13 @@ public class Atividade {
     @Column(nullable = false)
     private String titulo;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT") // TEXT é melhor para descrições longas
     private String descricao;
 
-    private LocalDateTime dataEntrega;
-
-    // Como as disciplinas estão em outro banco, é necessário
-    // guardar apenas o ID para fazer a referência lógica.
     @Column(nullable = false)
-    private Long disciplinaId;
+    private LocalDate prazo; // Formato esperado no JSON: "YYYY-MM-DD"
 
+    // Getters e Setters
     public Long getId() {
         return id;
     }
@@ -48,19 +45,11 @@ public class Atividade {
         this.descricao = descricao;
     }
 
-    public LocalDateTime getDataEntrega() {
-        return dataEntrega;
+    public LocalDate getPrazo() {
+        return prazo;
     }
 
-    public void setDataEntrega(LocalDateTime dataEntrega) {
-        this.dataEntrega = dataEntrega;
-    }
-
-    public Long getDisciplinaId() {
-        return disciplinaId;
-    }
-
-    public void setDisciplinaId(Long disciplinaId) {
-        this.disciplinaId = disciplinaId;
+    public void setPrazo(LocalDate prazo) {
+        this.prazo = prazo;
     }
 }
