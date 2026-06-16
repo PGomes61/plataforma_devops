@@ -4,6 +4,7 @@ import com.example.assignment_service.domain.Atividade;
 import com.example.assignment_service.repository.AtividadeRepository;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -14,10 +15,16 @@ public class AtividadeService {
     private final AtividadeRepository atividadeRepository;
     private final RestClient restClient;
 
-    public AtividadeService(AtividadeRepository atividadeRepository) {
+    // Injetando a URL dinamicamente via parâmetro do construtor
+    public AtividadeService(
+        AtividadeRepository atividadeRepository,
+        @Value(
+            "${ACADEMIC_SERVICE_URL:http://localhost:8092}"
+        ) String academicServiceUrl
+    ) {
         this.atividadeRepository = atividadeRepository;
         this.restClient = RestClient.builder()
-            .baseUrl("http://localhost:8092")
+            .baseUrl(academicServiceUrl) // Substitui o "http://localhost:8092" fixo
             .build();
     }
 
