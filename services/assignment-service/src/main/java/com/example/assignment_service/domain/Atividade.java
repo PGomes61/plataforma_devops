@@ -23,6 +23,9 @@ public class Atividade {
     @Column(nullable = false)
     private Long disciplinaId;
 
+    @Column(nullable = false)
+    private Long usuarioId;
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -62,5 +65,13 @@ public class Atividade {
 
     public void setDisciplinaId(Long disciplinaId) {
         this.disciplinaId = disciplinaId;
+    }
+
+    public Long getUsuarioId() {
+        return usuarioId;
+    }
+
+    public void setUsuarioId(Long usuarioId) {
+        this.usuarioId = usuarioId;
     }
 }
