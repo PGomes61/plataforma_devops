@@ -1,5 +1,6 @@
 package com.example.auth_service.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
@@ -47,6 +48,7 @@ public class Usuario {
         this.email = email;
     }
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public String getSenha() {
         return senha;
     }

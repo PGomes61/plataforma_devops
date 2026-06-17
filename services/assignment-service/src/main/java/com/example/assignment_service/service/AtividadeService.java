@@ -14,18 +14,22 @@ public class AtividadeService {
 
     private final AtividadeRepository atividadeRepository;
     private final RestClient restClient;
+    private final String academicServiceUrl;
+    private final String authServiceUrl;
 
-    // Injetando a URL dinamicamente via parâmetro do construtor
     public AtividadeService(
         AtividadeRepository atividadeRepository,
         @Value(
             "${ACADEMIC_SERVICE_URL:http://localhost:8092}"
-        ) String academicServiceUrl
+        ) String academicServiceUrl,
+        @Value(
+            "${AUTH_SERVICE_URL:http://localhost:8081}"
+        ) String authServiceUrl
     ) {
         this.atividadeRepository = atividadeRepository;
-        this.restClient = RestClient.builder()
-            .baseUrl(academicServiceUrl) // Substitui o "http://localhost:8092" fixo
-            .build();
+        this.academicServiceUrl = academicServiceUrl;
+        this.authServiceUrl = authServiceUrl;
+        this.restClient = RestClient.builder().build();
     }
 
     public List<Atividade> listarTodas() {
@@ -37,10 +41,14 @@ public class AtividadeService {
     }
 
     public Atividade criar(Atividade atividade) {
+        // Validação no Academic Service
         try {
             restClient
                 .get()
-                .uri("/disciplinas/{id}", atividade.getDisciplinaId())
+                .uri(
+                    academicServiceUrl + "/disciplinas/{id}",
+                    atividade.getDisciplinaId()
+                )
                 .retrieve()
                 .toBodilessEntity();
         } catch (HttpClientErrorException.NotFound e) {
@@ -52,6 +60,28 @@ public class AtividadeService {
         } catch (Exception e) {
             throw new IllegalStateException(
                 "Erro: O Academic Service está fora do ar ou inacessível."
+            );
+        }
+
+        // Validação no Auth Service
+        try {
+            restClient
+                .get()
+                .uri(
+                    authServiceUrl + "/usuarios/{id}",
+                    atividade.getUsuarioId()
+                )
+                .retrieve()
+                .toBodilessEntity();
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new IllegalArgumentException(
+                "Validação Falhou: O usuário com ID " +
+                    atividade.getUsuarioId() +
+                    " não existe no sistema de autenticação."
+            );
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                "Erro: O Auth Service está fora do ar ou inacessível."
             );
         }
 

@@ -1,66 +1,103 @@
 package com.example.auth_service.controller;
 
 import com.example.auth_service.domain.Usuario;
-import com.example.auth_service.repository.UsuarioRepository;
+import com.example.auth_service.service.UsuarioService;
+import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
-import java.util.List;
-import java.util.Optional;
-
 @RestController
-@RequestMapping("/usuarios") // Identificador correto para coleções
+@RequestMapping("/usuarios")
 public class UsuarioController {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioService usuarioService;
 
-    public UsuarioController(UsuarioRepository usuarioRepository) {
-        this.usuarioRepository = usuarioRepository;
+    public UsuarioController(UsuarioService usuarioService) {
+        this.usuarioService = usuarioService;
     }
 
     @GetMapping
-    public ResponseEntity<List<Usuario>> listarTodos() {
-        return ResponseEntity.ok(usuarioRepository.findAll());
+    public ResponseEntity<CollectionModel<EntityModel<Usuario>>> listarTodos() {
+        List<EntityModel<Usuario>> usuarios = usuarioService
+            .listarTodos()
+            .stream()
+            .map(this::adicionarLinksHateoas)
+            .collect(Collectors.toList());
+
+        CollectionModel<EntityModel<Usuario>> collectionModel =
+            CollectionModel.of(usuarios);
+        collectionModel.add(
+            WebMvcLinkBuilder.linkTo(
+                WebMvcLinkBuilder.methodOn(
+                    UsuarioController.class
+                ).listarTodos()
+            ).withSelfRel()
+        );
+
+        return ResponseEntity.ok(collectionModel);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Usuario> buscarPorId(@PathVariable Long id) {
-        Optional<Usuario> usuario = usuarioRepository.findById(id);
-        return usuario.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<EntityModel<Usuario>> buscarPorId(
+        @PathVariable Long id
+    ) {
+        Usuario usuario = usuarioService.buscarPorId(id);
+        return ResponseEntity.ok(adicionarLinksHateoas(usuario));
     }
 
     @PostMapping
-    public ResponseEntity<Usuario> criar(@RequestBody Usuario usuario) {
-        Usuario novoUsuario = usuarioRepository.save(usuario);
+    public ResponseEntity<EntityModel<Usuario>> criar(
+        @RequestBody Usuario usuario
+    ) {
+        Usuario novoUsuario = usuarioService.criar(usuario);
+        EntityModel<Usuario> resource = adicionarLinksHateoas(novoUsuario);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(novoUsuario.getId())
-                .toUri();
+            .path("/{id}")
+            .buildAndExpand(novoUsuario.getId())
+            .toUri();
 
-        return ResponseEntity.created(location).body(novoUsuario);
+        return ResponseEntity.created(location).body(resource);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Usuario> atualizar(@PathVariable Long id, @RequestBody Usuario usuarioAtualizado) {
-        if (!usuarioRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-
-        usuarioAtualizado.setId(id);
-        return ResponseEntity.ok(usuarioRepository.save(usuarioAtualizado));
+    public ResponseEntity<EntityModel<Usuario>> atualizar(
+        @PathVariable Long id,
+        @RequestBody Usuario usuario
+    ) {
+        Usuario usuarioAtualizado = usuarioService.atualizar(id, usuario);
+        return ResponseEntity.ok(adicionarLinksHateoas(usuarioAtualizado));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        if (!usuarioRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-
-        usuarioRepository.deleteById(id);
+        usuarioService.deletar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private EntityModel<Usuario> adicionarLinksHateoas(Usuario usuario) {
+        EntityModel<Usuario> resource = EntityModel.of(usuario);
+        resource.add(
+            WebMvcLinkBuilder.linkTo(
+                WebMvcLinkBuilder.methodOn(UsuarioController.class).buscarPorId(
+                    usuario.getId()
+                )
+            ).withSelfRel()
+        );
+        resource.add(
+            WebMvcLinkBuilder.linkTo(
+                WebMvcLinkBuilder.methodOn(
+                    UsuarioController.class
+                ).listarTodos()
+            ).withRel("usuarios")
+        );
+        return resource;
     }
 }
