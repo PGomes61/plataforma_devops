@@ -23,3 +23,15 @@ spring:
           uri: http://assignment-service:8080
           predicates:
             - Path=/atividades/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
