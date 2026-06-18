@@ -36,11 +36,9 @@ services:
       context: ../services/auth-service
       dockerfile: Dockerfile
     container_name: auth-service
-    ports:
-      - "8081:8080"
     environment:
       DB_HOST: postgres-auth
-      SERVER_PORT: 8080 # <-- Adicionado
+      SERVER_PORT: 8080
     depends_on:
       - postgres-auth
     networks:
@@ -52,11 +50,9 @@ services:
       context: ../services/academic-service
       dockerfile: Dockerfile
     container_name: academic-service
-    ports:
-      - "8082:8080"
     environment:
       DB_HOST: postgres-academic
-      SERVER_PORT: 8080 # <-- Adicionado
+      SERVER_PORT: 8080
     depends_on:
       - postgres-academic
     networks:
@@ -68,15 +64,30 @@ services:
       context: ../services/assignment-service
       dockerfile: Dockerfile
     container_name: assignment-service
-    ports:
-      - "8083:8080"
     environment:
       DB_HOST: postgres-assignment
       ACADEMIC_SERVICE_URL: http://academic-service:8080
-      SERVER_PORT: 8080 # <-- Adicionado
+      AUTH_SERVICE_URL: http://auth-service:8080
+      SERVER_PORT: 8080
     depends_on:
       - postgres-assignment
       - academic-service
+      - auth-service
+    networks:
+      - rede-microsservicos
+
+  # 5. A PORTA DE ENTRADA (GATEWAY)
+  api-gateway:
+    build:
+      context: ../services/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - academic-service
+      - assignment-service
     networks:
       - rede-microsservicos
 

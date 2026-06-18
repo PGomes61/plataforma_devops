@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      default-filters:
+        - PreserveHostHeader
+      routes:
+        - id: auth-service-route
+          uri: http://auth-service:8080
+          predicates:
+            - Path=/usuarios/**
+
+        - id: academic-service-route
+          uri: http://academic-service:8080
+          predicates:
+            - Path=/disciplinas/**
+
+        - id: assignment-service-route
+          uri: http://assignment-service:8080
+          predicates:
+            - Path=/atividades/**
