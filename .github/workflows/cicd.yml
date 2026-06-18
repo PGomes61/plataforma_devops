@@ -1,0 +1,87 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  # ==========================================
+  # 1. FASE DE CI (INTEGRAÇÃO CONTÍNUA)
+  # ==========================================
+  build-test-analyze:
+    name: Validar ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Apenas os serviços de negócio que possuem testes configurados
+        service: [academic-service, assignment-service, auth-service]
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
+
+      - name: Tornar o Maven Wrapper executável
+        working-directory: services/${{ matrix.service }}
+        run: chmod +x mvnw
+
+      - name: Executar Testes e Compilar
+        working-directory: services/${{ matrix.service }}
+        run: ./mvnw clean test
+
+      - name: Lint e Análise Estática (PMD)
+        working-directory: services/${{ matrix.service }}
+        run: ./mvnw org.apache.maven.plugins:maven-pmd-plugin:3.21.2:check -DfailOnViolation=false
+
+      - name: Verificação de Segurança (Trivy Scanner)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "services/${{ matrix.service }}"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "CRITICAL"
+
+  # ==========================================
+  # 2. FASE DE CD (ENTREGA CONTÍNUA)
+  # ==========================================
+  publish-images:
+    name: Publicar Imagem ${{ matrix.service }}
+    needs: build-test-analyze
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          [api-gateway, academic-service, assignment-service, auth-service]
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Construir e Fazer Push da Imagem
+        uses: docker/build-push-action@v5
+        with:
+          context: services/${{ matrix.service }}
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service }}:latest
+            ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service }}:${{ github.sha }}
