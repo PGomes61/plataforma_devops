@@ -85,3 +85,29 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service }}:latest
             ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service }}:${{ github.sha }}
+
+  # ==========================================
+  # 3. FASE DE CD (DEPLOY NO CLUSTER)
+  # ==========================================
+  deploy-to-swarm:
+    name: Deploy no Cluster Local
+    needs: publish-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/Documents/engSoftware/projeto/plataforma/infra
+            # Puxa a versão mais recente do que foi enviado ao Docker Hub
+            docker pull pgomes61/auth-service:latest
+            docker pull pgomes61/academic-service:latest
+            docker pull pgomes61/assignment-service:latest
+            docker pull pgomes61/api-gateway:latest
+
+            # Atualiza o stack no cluster
+            docker stack deploy -c docker-stack.yml plataforma-devops
