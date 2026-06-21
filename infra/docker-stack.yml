@@ -1,0 +1,155 @@
+version: "3.8"
+
+services:
+  # ==========================================
+  # 1. BANCOS DE DADOS
+  # ==========================================
+  db_auth:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    networks:
+      - rede-microsservicos
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      resources:
+        limits:
+          memory: 150M
+
+  db_academic:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: academic_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    networks:
+      - rede-microsservicos
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      resources:
+        limits:
+          memory: 150M
+
+  db_assignment:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: assignment_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    networks:
+      - rede-microsservicos
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      resources:
+        limits:
+          memory: 150M
+
+  # ==========================================
+  # 2. MICROSSERVIÇOS
+  # ==========================================
+  auth-service:
+    image: pgomes61/auth-service:latest
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db_auth:5432/auth_db
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+    networks:
+      - rede-microsservicos
+    depends_on:
+      - db_auth
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 512M
+
+  academic-service:
+    image: pgomes61/academic-service:latest
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db_academic:5432/academic_db
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+    networks:
+      - rede-microsservicos
+    depends_on:
+      - db_academic
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 512M
+
+  assignment-service:
+    image: pgomes61/assignment-service:latest
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db_assignment:5432/assignment_db
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+    networks:
+      - rede-microsservicos
+    depends_on:
+      - db_assignment
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 512M
+
+  # ==========================================
+  # 3. API GATEWAY
+  # ==========================================
+  api-gateway:
+    image: pgomes61/api-gateway:latest
+    ports:
+      - "8080:8080"
+    networks:
+      - rede-microsservicos
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          memory: 400M
+
+  # ==========================================
+  # 4. OBSERVABILIDADE
+  # ==========================================
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - rede-microsservicos
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 256M
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - rede-microsservicos
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+
+networks:
+  rede-microsservicos:
+    driver: overlay
