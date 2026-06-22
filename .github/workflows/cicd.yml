@@ -102,8 +102,7 @@ jobs:
         run: docker swarm init
 
       - name: Realizar Deploy da Stack
-        # Nota: Ajuste o caminho 'infra/docker-compose.yml' se o nome do seu arquivo de orquestração for diferente.
-        run: docker stack deploy -c infra/docker-compose.yml plataforma_stack
+        run: docker stack deploy -c infra/docker-swarm.yml plataforma_stack
 
       - name: Aguardar Inicialização dos Serviços
         run: |
