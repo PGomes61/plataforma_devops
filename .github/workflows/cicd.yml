@@ -102,7 +102,7 @@ jobs:
         run: docker swarm init
 
       - name: Realizar Deploy da Stack
-        run: docker stack deploy -c infra/docker-stack.yml plataforma_stack
+        run: docker stack deploy -c infra/docker-stack.yml plataforma_devops
 
       - name: Aguardar Inicialização dos Serviços
         run: |
