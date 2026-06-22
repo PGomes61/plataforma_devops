@@ -7,13 +7,13 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class AtividadeService {
 
     private final AtividadeRepository atividadeRepository;
-    private final RestClient restClient;
+    private final RestTemplate restTemplate;
     private final String academicServiceUrl;
     private final String authServiceUrl;
 
@@ -29,7 +29,7 @@ public class AtividadeService {
         this.atividadeRepository = atividadeRepository;
         this.academicServiceUrl = academicServiceUrl;
         this.authServiceUrl = authServiceUrl;
-        this.restClient = RestClient.builder().build();
+        this.restTemplate = new RestTemplate();
     }
 
     public List<Atividade> listarTodas() {
@@ -43,14 +43,11 @@ public class AtividadeService {
     public Atividade criar(Atividade atividade) {
         // Validação no Academic Service
         try {
-            restClient
-                .get()
-                .uri(
-                    academicServiceUrl + "/disciplinas/{id}",
-                    atividade.getDisciplinaId()
-                )
-                .retrieve()
-                .toBodilessEntity();
+            restTemplate.getForEntity(
+                academicServiceUrl + "/disciplinas/{id}",
+                Void.class,
+                atividade.getDisciplinaId()
+            );
         } catch (HttpClientErrorException.NotFound e) {
             throw new IllegalArgumentException(
                 "Validação Falhou: A disciplina com ID " +
@@ -65,14 +62,11 @@ public class AtividadeService {
 
         // Validação no Auth Service
         try {
-            restClient
-                .get()
-                .uri(
-                    authServiceUrl + "/usuarios/{id}",
-                    atividade.getUsuarioId()
-                )
-                .retrieve()
-                .toBodilessEntity();
+            restTemplate.getForEntity(
+                authServiceUrl + "/usuarios/{id}",
+                Void.class,
+                atividade.getUsuarioId()
+            );
         } catch (HttpClientErrorException.NotFound e) {
             throw new IllegalArgumentException(
                 "Validação Falhou: O usuário com ID " +
