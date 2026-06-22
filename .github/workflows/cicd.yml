@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Apenas os serviços de negócio que possuem testes configurados
         service: [academic-service, assignment-service, auth-service]
 
     steps:
@@ -85,3 +84,33 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service }}:latest
             ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service }}:${{ github.sha }}
+
+  # ==========================================
+  # 3. FASE DE VALIDAÇÃO (E2E SMOKE TEST)
+  # ==========================================
+  e2e-smoke-test:
+    name: Validar Roteamento e Infraestrutura
+    needs: publish-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Inicializar Docker Swarm Efêmero
+        run: docker swarm init
+
+      - name: Realizar Deploy da Stack
+        # Nota: Ajuste o caminho 'infra/docker-compose.yml' se o nome do seu arquivo de orquestração for diferente.
+        run: docker stack deploy -c infra/docker-compose.yml plataforma_stack
+
+      - name: Aguardar Inicialização dos Serviços
+        run: |
+          echo "Aguardando 30 segundos para o startup do Spring Boot e do PostgreSQL..."
+          sleep 30
+
+      - name: Executar Smoke Test
+        run: |
+          chmod +x infra/smoke-test.sh
+          ./infra/smoke-test.sh http://localhost:8080

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.example.assignment_service.domain.Atividade;
@@ -13,13 +14,12 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 
 @ExtendWith(MockitoExtension.class)
 class AtividadeServiceTest {
@@ -27,8 +27,8 @@ class AtividadeServiceTest {
     @Mock
     private AtividadeRepository atividadeRepository;
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private RestClient restClient;
+    @Mock
+    private RestTemplate restTemplate;
 
     @InjectMocks
     private AtividadeService atividadeService;
@@ -39,8 +39,8 @@ class AtividadeServiceTest {
     void setUp() {
         ReflectionTestUtils.setField(
             atividadeService,
-            "restClient",
-            restClient
+            "restTemplate",
+            restTemplate
         );
 
         atividade = new Atividade();
@@ -49,6 +49,7 @@ class AtividadeServiceTest {
         atividade.setDescricao("Ler capítulo 1");
         atividade.setPrazo(LocalDate.of(2026, 6, 25));
         atividade.setDisciplinaId(1L);
+        atividade.setUsuarioId(1L);
     }
 
     @Test
@@ -66,11 +67,7 @@ class AtividadeServiceTest {
     @Test
     void criar_ComDisciplinaInvalida_DeveLancarIllegalArgumentException() {
         when(
-            restClient
-                .get()
-                .uri(anyString(), anyLong())
-                .retrieve()
-                .toBodilessEntity()
+            restTemplate.getForEntity(anyString(), eq(Void.class), anyLong())
         ).thenThrow(HttpClientErrorException.NotFound.class);
 
         IllegalArgumentException exception = assertThrows(
