@@ -114,7 +114,7 @@ jobs:
       - name: Executar Smoke Test e Capturar Logs de Falha
         run: |
           chmod +x infra/smoke-test.sh
-          if ! ./infra/smoke-test.sh http://localhost:8080; then
+          if ! ./infra/smoke-test.sh http://127.0.0.1:8080; then
             echo "====================================================="
             echo "Falha de comunicação detectada. Extraindo logs do API Gateway para diagnóstico:"
             echo "====================================================="
