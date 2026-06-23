@@ -106,10 +106,18 @@ jobs:
 
       - name: Aguardar Inicialização dos Serviços
         run: |
-          echo "Aguardando 30 segundos para o startup do Spring Boot e do PostgreSQL..."
-          sleep 30
+          echo "Aguardando 90 segundos para o provisionamento completo do cluster..."
+          sleep 90
+          echo "Status atual dos serviços provisionados no Docker Swarm:"
+          docker service ls
 
-      - name: Executar Smoke Test
+      - name: Executar Smoke Test e Capturar Logs de Falha
         run: |
           chmod +x infra/smoke-test.sh
-          ./infra/smoke-test.sh http://localhost:8080
+          if ! ./infra/smoke-test.sh http://localhost:8080; then
+            echo "====================================================="
+            echo "Falha de comunicação detectada. Extraindo logs do API Gateway para diagnóstico:"
+            echo "====================================================="
+            docker service logs plataforma_devops_api-gateway
+            exit 1
+          fi
