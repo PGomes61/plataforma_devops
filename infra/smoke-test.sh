@@ -1,11 +1,34 @@
 #!/bin/bash
 
-# Define a URL do Gateway (usa localhost:8080 por padrao)
+# Define a URL do Gateway
 GATEWAY_URL=${1:-http://localhost:8080}
+MAX_RETRIES=18
+RETRY_INTERVAL=10
 
 echo "====================================================="
 echo "Iniciando Smoke Tests E2E na Plataforma"
 echo "Alvo: $GATEWAY_URL"
+echo "====================================================="
+
+echo "Aguardando o provisionamento do API Gateway e da malha Swarm..."
+# Polling de conexao TCP
+for ((i=1; i<=MAX_RETRIES; i++)); do
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$GATEWAY_URL/usuarios")
+
+  if [ "$HTTP_STATUS" -ne 000 ]; then
+    echo "Conexao TCP estabelecida com sucesso na tentativa $i."
+    break
+  fi
+
+  echo "Tentativa $i/$MAX_RETRIES: Gateway indisponivel. Aguardando ${RETRY_INTERVAL}s..."
+  sleep $RETRY_INTERVAL
+
+  if [ "$i" -eq "$MAX_RETRIES" ]; then
+    echo "Timeout esgotado. O API Gateway nao respondeu apos $((MAX_RETRIES * RETRY_INTERVAL)) segundos."
+    exit 1
+  fi
+done
+
 echo "====================================================="
 
 # Funcao para testar os endpoints
@@ -15,8 +38,6 @@ check_endpoint() {
 
   echo -n "Testando roteamento para $NOME_SERVICO ($ENDPOINT)... "
 
-  # Faz um curl silencioso e captura apenas o HTTP Code
-  # Timeout de 5s para nao travar a esteira
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$GATEWAY_URL$ENDPOINT")
 
   # Considera sucesso HTTP 200 (OK) ou 201 (Created)
